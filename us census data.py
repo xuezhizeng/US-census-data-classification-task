@@ -1,5 +1,7 @@
 
 import pandas as pd
+import matplotlib
+matplotlib.use('tkAgg')
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
@@ -27,7 +29,7 @@ plt.xlabel('age')
 df.loc[df['income']==' - 50000.', 1].plot.hist(color='chocolate',bins=40,title='Histogram of Age')
 df.loc[df['income']==' 50000+.', 1].plot.hist(color='darkmagenta',bins=40)
 plt.legend(['Under 50k income','Over 50k income'])
-
+plt.show()
 df.groupby('income').hist(alpha=0.4) #_plot of the histograms of the numerical variable
 
 
@@ -82,18 +84,32 @@ associatedprediction=[ 1 if (predictions1[k]==1 or predictions2[k]==1) else 0 fo
 print(confusion_matrix(y_test,associatedprediction))
 print(classification_report(y_test, associatedprediction))
 
-for k in range(len(thresholds)):
-    if fpr[k]>0.1:
-        thresh=thresholds[k]
-        break
 
-probas=model1.predict_proba(x_test)[:,1]
-true_pos=sum([(probas[k]>thresh)*(y_test.values[k]==1) for k in range(len(probas))])
-false_pos=sum([(probas[k]>thresh)*(y_test.values[k]==0) for k in range(len(probas))])
-false_neg=sum([(probas[k]<=thresh)*(y_test.values[k]==1) for k in range(len(probas))])
-true_neg=sum([(probas[k]<=thresh)*(y_test.values[k]==0) for k in range(len(probas))])
+#best f1 score :
+probas=model1.predict_proba(x_train)[:,1]
+threshbest,f1best=0,0
+for i in range(10):
+    print(i)
+    thresh=0.2+i/100
+    true_pos = sum([(probas[k] > thresh) * (y_train.values[k] == 1) for k in range(len(probas))])
+    false_pos = sum([(probas[k] > thresh) * (y_train.values[k] == 0) for k in range(len(probas))])
+    false_neg = sum([(probas[k] <= thresh) * (y_train.values[k] == 1) for k in range(len(probas))])
+    true_neg = sum([(probas[k] <= thresh) * (y_train.values[k] == 0) for k in range(len(probas))])
 
-accuracy=(true_pos+true_neg)/(true_pos+true_neg+false_pos+false_neg)
-recall=true_pos/(true_pos+false_neg)
-precision=true_pos/(true_pos+false_pos)
-sensitivity=true_neg/(true_neg+false_pos)
+    recall = true_pos / (true_pos + false_neg)
+    precision = true_pos / (true_pos + false_pos)
+    f1 = 2 * precision * recall / (precision + recall)
+    if f1>f1best:
+        f1best=f1
+        threshbest=thresh
+print(f1best,threshbest)
+probastest=model1.predict_proba(x_test)[:,1]
+true_pos = sum([(probastest[k] > threshbest) * (y_test.values[k] == 1) for k in range(len(probastest))])
+false_pos = sum([(probastest[k] > threshbest) * (y_test.values[k] == 0) for k in range(len(probastest))])
+false_neg = sum([(probastest[k] <= threshbest) * (y_test.values[k] == 1) for k in range(len(probastest))])
+true_neg = sum([(probastest[k] <= threshbest) * (y_test.values[k] == 0) for k in range(len(probastest))])
+
+recall = true_pos / (true_pos + false_neg)
+precision = true_pos / (true_pos + false_pos)
+f1 = 2 * precision * recall / (precision + recall)
+print(f1)
